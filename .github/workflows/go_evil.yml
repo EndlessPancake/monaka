@@ -1,0 +1,35 @@
+name: semgrep-with-reviewdog
+on: 
+  pull_request:
+    branches:
+    - main
+  push:
+    branches:
+    - main
+jobs:
+  reviewdog:
+    name: reviewdog
+    runs-on: ubuntu-latest
+    steps:
+      - uses: reviewdog/action-setup@v1
+        with:
+          reviewdog_version: latest
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Run semgrep
+        env:
+          REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          docker run \
+            -v $(pwd):/workdir \
+            --workdir /workdir \
+            returntocorp/semgrep \
+            --severity WARNING --json -f /workdir/.semgrep /workdir \
+          | jq -r '.results[] | "\(.path):\(.start.line):\(.start.col): \(.extra.message)"' \
+          | sed 's#^/workdir/##' \
+          | reviewdog \
+            -efm="%f:%l:%c: %m" \
+            -diff="git diff FETCH_HEAD" \
+            -level=warning \
+            -reporter=github-pr-review
