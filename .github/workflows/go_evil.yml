@@ -2,10 +2,10 @@ name: semgrep-with-reviewdog
 on: 
   pull_request:
     branches:
-    - main
+    - master
   push:
     branches:
-    - main
+    - master
 jobs:
   reviewdog:
     name: reviewdog
@@ -25,7 +25,7 @@ jobs:
             -v $(pwd):/workdir \
             --workdir /workdir \
             returntocorp/semgrep \
-            --severity WARNING --json -f /workdir/.semgrep /workdir \
+            -f /workdir/.semgrep \
           | jq -r '.results[] | "\(.path):\(.start.line):\(.start.col): \(.extra.message)"' \
           | sed 's#^/workdir/##' \
           | reviewdog \
